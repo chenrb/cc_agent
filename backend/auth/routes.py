@@ -2,6 +2,7 @@
 import os
 import secrets
 from datetime import timedelta, datetime, timezone
+from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import select, update
@@ -144,3 +145,98 @@ async def me(user_id: str = Depends(current_user_id)):
         raise HTTPException(401, "未认证")
     return {"id": user.id, "username": user.username,
             "role": user.role, "is_active": user.is_active}
+
+
+# ---------- 管理员用户 CRUD ----------
+async def require_admin(role: str | None = Depends(current_user_role),
+                        user_id: str = Depends(current_user_id)) -> str:
+    if role != "admin":
+        raise HTTPException(403, "需要管理员权限")
+    return user_id
+
+
+class CreateUserIn(BaseModel):
+    username: str
+    password: str
+    role: str = "user"
+
+
+class UpdateUserIn(BaseModel):
+    is_active: Optional[bool] = None
+    role: Optional[str] = None
+    password: Optional[str] = None
+
+
+@auth_router.get("/admin/users", dependencies=[Depends(require_admin)])
+async def list_users():
+    async with SessionLocal() as s:
+        rows = (await s.execute(select(models.User).order_by(models.User.id))).scalars().all()
+    return [{"id": u.id, "username": u.username, "role": u.role,
+             "is_active": u.is_active, "created_at": u.created_at.isoformat()}
+            for u in rows]
+
+
+@auth_router.post("/admin/users", status_code=201,
+                  dependencies=[Depends(require_admin)])
+async def create_user(body: CreateUserIn):
+    if body.role not in ("admin", "user"):
+        raise HTTPException(400, "role 必须是 admin 或 user")
+    async with SessionLocal() as s:
+        exists = (await s.execute(select(models.User)
+                   .where(models.User.username == body.username))).scalar_one_or_none()
+        if exists:
+            raise HTTPException(409, "用户名已存在")
+        u = models.User(username=body.username,
+                        password_hash=hash_password(body.password), role=body.role)
+        s.add(u)
+        await s.commit()
+        await s.refresh(u)
+    return {"id": u.id, "username": u.username, "role": u.role}
+
+
+@auth_router.patch("/admin/users/{uid}", dependencies=[Depends(require_admin)])
+async def update_user(uid: int, body: UpdateUserIn,
+                      actor: str = Depends(current_user_id)):
+    async with SessionLocal() as s:
+        u = (await s.execute(select(models.User).where(models.User.id == uid))).scalar_one_or_none()
+        if u is None:
+            raise HTTPException(404, "用户不存在")
+        # 保护规则
+        if body.is_active is False and u.username == actor:
+            raise HTTPException(400, "不能禁用自己")
+        if body.role is not None and u.username == actor and body.role != "admin":
+            raise HTTPException(400, "不能降级自己的角色")
+        # 最后一个 admin 不可禁用/降级
+        if (body.is_active is False or (body.role is not None and body.role != "admin")) and u.role == "admin":
+            cnt = len((await s.execute(select(models.User)
+                        .where(models.User.role == "admin", models.User.is_active == True)))  # noqa: E712
+                      .scalars().all())
+            if cnt <= 1:
+                raise HTTPException(400, "至少保留一个启用的管理员")
+        if body.is_active is not None:
+            u.is_active = body.is_active
+        if body.role is not None:
+            u.role = body.role
+        if body.password:
+            u.password_hash = hash_password(body.password)
+        await s.commit()
+    return {"id": u.id, "username": u.username, "role": u.role, "is_active": u.is_active}
+
+
+@auth_router.delete("/admin/users/{uid}", status_code=204,
+                    dependencies=[Depends(require_admin)])
+async def delete_user(uid: int, actor: str = Depends(current_user_id)):
+    async with SessionLocal() as s:
+        u = (await s.execute(select(models.User).where(models.User.id == uid))).scalar_one_or_none()
+        if u is None:
+            raise HTTPException(404, "用户不存在")
+        if u.username == actor:
+            raise HTTPException(400, "不能删除自己")
+        if u.role == "admin":
+            cnt = len((await s.execute(select(models.User)
+                        .where(models.User.role == "admin", models.User.is_active == True)))  # noqa: E712
+                      .scalars().all())
+            if cnt <= 1:
+                raise HTTPException(400, "至少保留一个启用的管理员")
+        await s.delete(u)
+        await s.commit()
