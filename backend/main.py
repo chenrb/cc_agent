@@ -5,6 +5,7 @@
   - 持久化存储：RedisStorage -> AsyncSQLAlchemyStorage（SQLite）
   - 消息总线：InMemoryMessageBus -> RedisMessageBus（始终 Redis，单/多进程通用）
 """
+import asyncio
 import os
 from pathlib import Path
 
@@ -26,6 +27,15 @@ from agentscope.middleware import AgenticMemoryMiddleware, MiddlewareBase
 from agentscope.permission import PermissionContext, PermissionMode
 from agentscope.rag import QdrantStore
 from agentscope.workspace import WorkspaceBase
+
+from backend.auth.db import Base, engine
+from backend.auth import models  # noqa: F401  # 注册表
+from backend.auth.bootstrap import bootstrap_admin
+from backend.auth.routes import auth_router
+from backend.auth.middleware import JWTAuthMiddleware
+from backend.auth.spa import mount_spa
+
+JWT_SECRET = os.getenv("JWT_SECRET") or "dev-secret-change-me"
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
@@ -106,6 +116,28 @@ async def longterm_memory_factory(
     ]
 
 
+# --------------------------------------------------------------------------
+# 鉴权：建表（auth 两表）+ 首管引导（读 env）
+# --------------------------------------------------------------------------
+async def init_db_and_bootstrap():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    await bootstrap_admin(
+        os.getenv("CC_BOOTSTRAP_ADMIN_USERNAME"),
+        os.getenv("CC_BOOTSTRAP_ADMIN_PASSWORD"),
+    )
+
+
+def _cors_middleware():
+    """CORS 中间件：仅在配置 CORS_ALLOWED_ORIGINS 时挂载。"""
+    origins = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    if not origins:
+        return []
+    return [Middleware(CORSMiddleware, allow_origins=origins,
+                       allow_credentials=True, allow_methods=["*"], allow_headers=["*"])]
+
+
+asyncio.run(init_db_and_bootstrap())
 app = create_app(
     storage=storage,
     message_bus=message_bus,
@@ -154,15 +186,13 @@ app = create_app(
     ],
     extra_agent_middlewares=longterm_memory_factory,
     extra_middlewares=[
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["*"],
-            allow_headers=["*"],
-        ),
+        Middleware(JWTAuthMiddleware, secret=JWT_SECRET),
+        *_cors_middleware(),
     ],
     title="CC Agent",
 )
+app.include_router(auth_router)
+mount_spa(app)
 
 
 if __name__ == "__main__":
