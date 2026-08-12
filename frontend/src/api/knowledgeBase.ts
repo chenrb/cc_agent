@@ -1,4 +1,4 @@
-import { ApiError, client, getBaseUrl, getUserId } from './client';
+import { ApiError, client, getBaseUrl } from './client';
 import type {
 	CreateKnowledgeBaseRequest,
 	CreateKnowledgeBaseResponse,
@@ -62,7 +62,9 @@ function uploadDocumentXhr(
 		const xhr = new XMLHttpRequest();
 		const url = new URL(`/knowledge_bases/${knowledgeBaseId}/documents`, getBaseUrl());
 		xhr.open('POST', url.toString(), true);
-		xhr.setRequestHeader('X-User-ID', getUserId());
+		// Identity comes from the auth cookie; send it cross-origin and let the
+		// backend middleware derive X-User-ID server-side.
+		xhr.withCredentials = true;
 
 		const onAbort = () => xhr.abort();
 		signal?.addEventListener('abort', onAbort, { once: true });

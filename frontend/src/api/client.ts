@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 
 export const getBaseUrl = () => localStorage.getItem('server_url') ?? '';
-export const getUserId = () => localStorage.getItem('username') ?? '';
 
 /**
  * Structured error thrown for non-2xx HTTP responses.
@@ -32,15 +31,45 @@ interface RequestOptions {
 	userId?: string;
 	/** Gives up after this many ms and reports {@link TIMEOUT_STATUS}. Off by default — a streaming chat is meant to stay open. */
 	timeoutMs?: number;
+	/** Internal: marks a retry issued after a silent token refresh, so a second 401 fails instead of looping. */
+	__retried?: boolean;
 }
 
 /** Reported when `timeoutMs` elapses. Real 408s come from a server, so either way the request did not complete in time. */
 export const TIMEOUT_STATUS = 408;
 
-function buildHeaders(hasBody: boolean, userId?: string): Record<string, string> {
-	const headers: Record<string, string> = { 'X-User-ID': userId ?? getUserId() };
+function buildHeaders(hasBody: boolean): Record<string, string> {
+	// Identity travels in the cc_access cookie; the backend's auth middleware
+	// injects X-User-ID itself, so the client must not (it strips spoofed ones).
+	const headers: Record<string, string> = {};
 	if (hasBody) headers['Content-Type'] = 'application/json';
 	return headers;
+}
+
+/**
+ * Single-flight access refresh: concurrent 401s share one `POST /auth/refresh`
+ * so we don't burn through the rotating refresh-token chain. Resolves to
+ * whether a fresh access cookie was obtained.
+ */
+let refreshPromise: Promise<boolean> | null = null;
+async function refreshOnce(): Promise<boolean> {
+	if (!refreshPromise) {
+		refreshPromise = (async () => {
+			try {
+				const r = await fetch(new URL('/auth/refresh', getBaseUrl()).toString(), {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+				});
+				return r.ok;
+			} catch {
+				return false;
+			} finally {
+				refreshPromise = null;
+			}
+		})();
+	}
+	return refreshPromise;
 }
 
 /** Parse the response body and extract the `detail` field if the backend returned JSON. */
@@ -64,7 +93,6 @@ async function streamRequest(path: string, options: RequestOptions = {}): Promis
 		signal,
 		silent = false,
 		baseUrl,
-		userId,
 		timeoutMs,
 	} = options;
 	const url = new URL(path, baseUrl ?? getBaseUrl());
@@ -82,9 +110,10 @@ async function streamRequest(path: string, options: RequestOptions = {}): Promis
 	try {
 		res = await fetch(url.toString(), {
 			method,
-			headers: buildHeaders(body !== undefined, userId),
+			headers: buildHeaders(body !== undefined),
 			body: body ? JSON.stringify(body) : undefined,
 			signal: combined,
+			credentials: 'include',
 		});
 	} catch (e) {
 		// An abort is the caller's own doing — pass it through untouched.
@@ -106,6 +135,29 @@ async function streamRequest(path: string, options: RequestOptions = {}): Promis
 	}
 
 	if (!res.ok) {
+		// A 401 on a real endpoint means the access cookie expired. Try one
+		// silent refresh (single-flighted across in-flight requests); if it
+		// lands, replay the original request once. The login and refresh
+		// endpoints are exempt — a 401 there is the answer, not a trigger.
+		if (
+			res.status === 401 &&
+			!options.__retried &&
+			!path.startsWith('/auth/login') &&
+			!path.startsWith('/auth/refresh')
+		) {
+			const refreshed = await refreshOnce();
+			if (refreshed) {
+				return streamRequest(path, { ...options, __retried: true });
+			}
+			// Refresh failed too: the session is gone. Drop the cached identity
+			// hint and send the user to login (the guard re-checks on direct
+			// visits as well).
+			localStorage.removeItem('username');
+			localStorage.removeItem('user_role');
+			if (window.location.pathname !== '/login') {
+				window.location.assign('/login');
+			}
+		}
 		const detail = await extractErrorDetail(res);
 		const error = new ApiError(res.status, detail);
 		if (!silent) toast.error(detail);
