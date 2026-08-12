@@ -12,6 +12,17 @@ wheels/
 # IDE
 .idea/
 .vscode/
+.zcode/
 
 # Vendored agentscope: exclude heavy frontend example (61M), keep Python source
 agentscope/examples/web_ui/
+
+# Backend runtime
+backend/workspaces/
+backend/*.db
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
