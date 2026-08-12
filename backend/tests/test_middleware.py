@@ -3,7 +3,7 @@ import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
 from backend.auth.middleware import JWTAuthMiddleware, parse_cookies
-from backend.auth.security import create_access_token
+from backend.auth.security import create_access_token, create_refresh_token
 
 SECRET = "test-secret-0123456789abcdef0123456789ab"
 
@@ -72,3 +72,25 @@ async def test_health_gets_sentinel_without_cookie():
         r = await ac.get("/health")
     assert r.status_code == 200
     assert r.json() == {"ok": True, "uid": "__health_check__"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_rejected_as_access():
+    # 拿 refresh token 当 cc_access —— type != "access" 分支，普通无效（无 code）
+    tok, _ = create_refresh_token("alice", SECRET)
+    async with AsyncClient(transport=ASGITransport(app=_inner_app()),
+                           base_url="http://test", cookies={"cc_access": tok}) as ac:
+        r = await ac.get("/whoami")
+    assert r.status_code == 401
+    assert "code" not in r.json()
+
+
+@pytest.mark.asyncio
+async def test_garbage_token_401_without_code():
+    # 完全无法解码的 token —— 走 jwt.InvalidTokenError 分支，无 code 字段
+    async with AsyncClient(transport=ASGITransport(app=_inner_app()),
+                           base_url="http://test",
+                           cookies={"cc_access": "garbage.notavalidtoken"}) as ac:
+        r = await ac.get("/whoami")
+    assert r.status_code == 401
+    assert "code" not in r.json()

@@ -66,6 +66,7 @@ class JWTAuthMiddleware:
         method, path = scope["method"], scope["path"]
 
         if (method, path) in PUBLIC_PATHS:
+            _strip_user_headers(scope)
             return await self.app(scope, receive, send)
 
         if (method, path) == _HEALTH_PATH:
@@ -86,5 +87,8 @@ class JWTAuthMiddleware:
         if payload.get("type") != "access":
             return await _send_json(send, 401, "无效 token")
 
-        _inject_user(scope, payload["sub"], payload.get("role"))
+        user_id = payload.get("sub")
+        if user_id is None:
+            return await _send_json(send, 401, "无效 token")
+        _inject_user(scope, user_id, payload.get("role"))
         return await self.app(scope, receive, send)
