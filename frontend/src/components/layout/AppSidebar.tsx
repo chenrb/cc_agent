@@ -7,11 +7,14 @@ import {
 	KeyRound,
 	Languages,
 	LibraryBig,
+	LogOut,
 	UserRound,
+	Users,
 } from 'lucide-react';
 import { useOnborda } from 'onborda';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+import { authApi } from '@/api/auth';
 import AgentScope from '@/assets/images/agentscope_white.svg?react';
 import MCPSvg from '@/assets/images/mcp.svg?react';
 import { CHAT_TOUR_NAME } from '@/components/tour/chatTourSteps';
@@ -49,6 +52,19 @@ export function AppSidebar() {
 	const handleToggleLanguage = () => {
 		const next = i18n.language.startsWith('zh') ? 'en' : 'zh';
 		i18n.changeLanguage(next);
+	};
+
+	const isAdmin = localStorage.getItem('user_role') === 'admin';
+
+	const handleLogout = async () => {
+		try {
+			await authApi.logout();
+		} catch {
+			// Even if the server call fails, drop the local session and leave.
+		}
+		localStorage.removeItem('username');
+		localStorage.removeItem('user_role');
+		navigate('/login', { replace: true });
 	};
 
 	return (
@@ -174,6 +190,18 @@ export function AppSidebar() {
 							<Compass />
 						</SidebarMenuButton>
 					</SidebarMenuItem>
+					{isAdmin && (
+						<SidebarMenuItem>
+							<SidebarMenuButton
+								tooltip={{ children: t('users.title'), hidden: false }}
+								isActive={location.pathname === '/users'}
+								onClick={() => navigate('/users')}
+								className="justify-center"
+							>
+								<Users />
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					)}
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							tooltip={{ children: t('common.settings'), hidden: false }}
@@ -182,6 +210,15 @@ export function AppSidebar() {
 							className="justify-center"
 						>
 							<UserRound />
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							tooltip={{ children: t('login.logout'), hidden: false }}
+							onClick={handleLogout}
+							className="justify-center"
+						>
+							<LogOut />
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>

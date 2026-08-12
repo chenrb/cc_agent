@@ -804,6 +804,7 @@
 		"disable": "禁用",
 		"enable": "启用",
 		"delete": "删除",
+		"actions": "操作",
 		"create": "新建用户",
 		"createUser": "新建用户",
 		"password": "密码",

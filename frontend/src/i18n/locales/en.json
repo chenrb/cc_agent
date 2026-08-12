@@ -804,6 +804,7 @@
 		"disable": "Disable",
 		"enable": "Enable",
 		"delete": "Delete",
+		"actions": "Actions",
 		"create": "Create user",
 		"createUser": "New user",
 		"password": "Password",
