@@ -695,7 +695,7 @@ wheels = [
 [[package]]
 name = "cc-agent"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "agentscope", extra = ["channel", "full", "models", "service", "storage-redis", "storage-s3", "storage-sql", "tools", "workspace"] },
     { name = "aiosqlite" },

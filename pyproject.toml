@@ -1,7 +1,7 @@
 [project]
 name = "cc-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "CC Agent: 基于 agentscope 的前后端分离智能体应用"
 readme = "README.md"
 authors = [
     { name = "chenrb", email = "crbxyx@foxmail.com" }
@@ -12,13 +12,6 @@ dependencies = [
     "aiosqlite>=0.22.1",
     "python-dotenv>=1.2.2",
 ]
-
-[project.scripts]
-cc-agent = "cc_agent:main"
-
-[build-system]
-requires = ["uv_build>=0.12.2,<0.13.0"]
-build-backend = "uv_build"
 
 [tool.uv.sources]
 agentscope = { path = "./agentscope", editable = true }
