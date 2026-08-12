@@ -40,7 +40,6 @@ function notReadyComponents(detail: string): string {
 export const SetupPage = ({ onComplete, className }: Props) => {
 	const { t } = useTranslation();
 	const [url, setUrl] = useState(() => localStorage.getItem('server_url') ?? '');
-	const [username, setUsername] = useState(() => localStorage.getItem('username') ?? '');
 	const [checking, setChecking] = useState(false);
 	const [errorMsg, setErrorMsg] = useState('');
 
@@ -67,18 +66,14 @@ export const SetupPage = ({ onComplete, className }: Props) => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const trimmedUrl = url.trim().replace(/\/+$/, '');
-		const trimmedName = username.trim();
 
 		setChecking(true);
 		setErrorMsg('');
 		try {
-			// Persist only after the backend confirms both the address and
-			// the username work, so a failed attempt cannot leave the app
-			// holding a config that sends every later page into errors.
-			const health = (await healthApi.check(
-				trimmedUrl,
-				trimmedName,
-			)) as Partial<HealthResponse>;
+			// Persist only after the backend confirms the address works, so a
+			// failed attempt cannot leave the app holding a config that sends
+			// every later page into errors.
+			const health = (await healthApi.check(trimmedUrl)) as Partial<HealthResponse>;
 			// Valid JSON that is not a health report means the address points
 			// at some other service that happens to answer 200.
 			if (typeof health.version !== 'string' || !health.components) {
@@ -86,7 +81,6 @@ export const SetupPage = ({ onComplete, className }: Props) => {
 				return;
 			}
 			localStorage.setItem('server_url', trimmedUrl);
-			localStorage.setItem('username', trimmedName);
 			onComplete();
 		} catch (err) {
 			setErrorMsg(describeFailure(err));
@@ -116,19 +110,6 @@ export const SetupPage = ({ onComplete, className }: Props) => {
 										placeholder={t('setup.serverUrlPlaceholder')}
 										value={url}
 										onChange={(e) => setUrl(e.target.value)}
-										required
-									/>
-								</Field>
-								<Field>
-									<FieldLabel htmlFor="username-input">
-										{t('setup.username')}
-									</FieldLabel>
-									<Input
-										id="username-input"
-										type="text"
-										placeholder={t('setup.usernamePlaceholder')}
-										value={username}
-										onChange={(e) => setUsername(e.target.value)}
 										required
 									/>
 								</Field>

@@ -27,8 +27,6 @@ interface RequestOptions {
 	signal?: AbortSignal;
 	/** Overrides the stored server URL. Lets the setup page probe an address before persisting it. */
 	baseUrl?: string;
-	/** Overrides the stored username, for the same reason as `baseUrl`. */
-	userId?: string;
 	/** Gives up after this many ms and reports {@link TIMEOUT_STATUS}. Off by default — a streaming chat is meant to stay open. */
 	timeoutMs?: number;
 	/** Internal: marks a retry issued after a silent token refresh, so a second 401 fails instead of looping. */
@@ -177,7 +175,7 @@ export const client = {
 	get: <T>(
 		path: string,
 		params?: Record<string, string>,
-		options?: { silent?: boolean; baseUrl?: string; userId?: string; timeoutMs?: number },
+		options?: { silent?: boolean; baseUrl?: string; timeoutMs?: number },
 	) => request<T>(path, { method: 'GET', params, ...options }),
 	post: <T>(
 		path: string,
