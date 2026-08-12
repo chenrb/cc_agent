@@ -1,11 +1,10 @@
 # backend/tests/test_security.py
-import time
 import jwt
 import pytest
 from backend.auth.security import (hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token)
 
-SECRET = "test-secret"
+SECRET = "test-secret-0123456789abcdef0123456789ab"
 
 
 def test_password_roundtrip():
@@ -40,4 +39,4 @@ def test_expired_token_raises():
 def test_bad_signature_raises():
     tok, _ = create_access_token("alice", "user", SECRET)
     with pytest.raises(jwt.InvalidTokenError):
-        decode_token(tok, "other-secret")
+        decode_token(tok, "other-secret-0123456789abcdef0123456789")
