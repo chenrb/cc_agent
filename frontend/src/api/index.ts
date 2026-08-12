@@ -1,5 +1,6 @@
 export * from './types';
 export { agentApi } from './agent';
+export { adminUsersApi, authApi } from './auth';
 export { sessionApi, takeFreshlyCreated } from './session';
 export { credentialApi } from './credential';
 export { chatApi } from './chat';

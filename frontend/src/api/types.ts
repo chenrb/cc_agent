@@ -1138,3 +1138,26 @@ export interface HealthResponse {
 	version: string;
 	components: Record<string, ComponentStatus>;
 }
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+export type UserRole = 'admin' | 'user';
+
+/**
+ * A user account as exposed by the auth API. Mirrors the shape returned by
+ * `GET /auth/me` and the admin CRUD routes. `created_at` is omitted by some
+ * routes (login, create), so it stays optional.
+ */
+export interface AuthUser {
+	id: number;
+	username: string;
+	role: UserRole;
+	is_active: boolean;
+	created_at?: string;
+}
+
+/** Response of `POST /auth/login`. */
+export interface LoginResponse {
+	user: Pick<AuthUser, 'username' | 'role'>;
+	expires_in: number;
+}
