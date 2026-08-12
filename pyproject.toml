@@ -1,0 +1,22 @@
+[project]
+name = "cc-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "chenrb", email = "crbxyx@foxmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "agentscope[channel,models,service,storage-redis,storage-s3,storage-sql,tools,workspace]",
+]
+
+[project.scripts]
+cc-agent = "cc_agent:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+agentscope = { path = "./agentscope", editable = true }
