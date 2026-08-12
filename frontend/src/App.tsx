@@ -7,6 +7,8 @@ import { MCPHubPage } from './pages/mcp';
 import { SkillHubPage } from './pages/skill';
 import { RouteError } from '@/components/error/RouteError';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { RequireAdmin } from '@/components/RequireAdmin';
+import { RequireAuth } from '@/components/RequireAuth';
 import { buildChatTour } from '@/components/tour/chatTourSteps';
 import { TourCard } from '@/components/tour/TourCard';
 import { UploadProvider } from '@/context/UploadContext';
@@ -15,8 +17,10 @@ import { ChannelPage } from '@/pages/channel';
 import { ChatPage } from '@/pages/chat';
 import { CredentialPage } from '@/pages/credential';
 import { KnowledgePage } from '@/pages/knowledge';
+import { LoginPage } from '@/pages/login';
 import { SchedulePage } from '@/pages/schedule';
 import { SetupPage } from '@/pages/setup';
+import { UsersPage } from '@/pages/users';
 
 function SetupPageRoute() {
 	const navigate = useNavigate();
@@ -31,8 +35,16 @@ function SetupPageRoute() {
 }
 
 const router = createBrowserRouter([
+	{ path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
 	{
-		element: <AppLayout />,
+		// RequireAuth gates every authenticated route at the layout level: it
+		// checks the access cookie once and bounces to /login on failure, so
+		// each page below can assume a valid session.
+		element: (
+			<RequireAuth>
+				<AppLayout />
+			</RequireAuth>
+		),
 		errorElement: <RouteError />,
 		children: [
 			{
@@ -56,6 +68,14 @@ const router = createBrowserRouter([
 					{ path: '/skill/:hubId', element: <SkillHubPage /> },
 					{ path: '/knowledge', element: <KnowledgePage /> },
 					{ path: '/knowledge/:kbId', element: <KnowledgePage /> },
+					{
+						path: '/users',
+						element: (
+							<RequireAdmin>
+								<UsersPage />
+							</RequireAdmin>
+						),
+					},
 				],
 			},
 		],

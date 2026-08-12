@@ -780,5 +780,38 @@
 		"empty": "This folder is empty",
 		"pressEnter": "Press Enter to check this path first",
 		"gitTooltip": "{{staged}} staged · {{unstaged}} modified · {{untracked}} untracked\nLine counts exclude untracked files"
+	},
+	"login": {
+		"title": "Sign in",
+		"description": "Sign in to your CC Agent account.",
+		"username": "Username",
+		"password": "Password",
+		"submit": "Sign in",
+		"signingIn": "Signing in…",
+		"errorGeneric": "Sign-in failed. Please try again.",
+		"logout": "Sign out"
+	},
+	"users": {
+		"title": "Users",
+		"description": "Manage who can sign in.",
+		"username": "Username",
+		"role": "Role",
+		"roleAdmin": "Admin",
+		"roleUser": "User",
+		"status": "Status",
+		"active": "Active",
+		"disabled": "Disabled",
+		"disable": "Disable",
+		"enable": "Enable",
+		"delete": "Delete",
+		"create": "Create user",
+		"createUser": "New user",
+		"password": "Password",
+		"resetPassword": "Reset password",
+		"newPassword": "New password",
+		"save": "Save",
+		"deleteTitle": "Delete user \"{{name}}\"?",
+		"deleteDescription": "They will lose access immediately.",
+		"lastAdmin": "At least one enabled admin must remain."
 	}
 }

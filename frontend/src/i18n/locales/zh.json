@@ -780,5 +780,38 @@
 		"empty": "此文件夹为空",
 		"pressEnter": "先按回车校验该路径",
 		"gitTooltip": "{{staged}} 已暂存 · {{unstaged}} 已修改 · {{untracked}} 未跟踪\n行数不含未跟踪文件"
+	},
+	"login": {
+		"title": "登录",
+		"description": "登录您的 CC Agent 账号。",
+		"username": "用户名",
+		"password": "密码",
+		"submit": "登录",
+		"signingIn": "登录中…",
+		"errorGeneric": "登录失败，请重试。",
+		"logout": "登出"
+	},
+	"users": {
+		"title": "用户管理",
+		"description": "管理可登录的账号。",
+		"username": "用户名",
+		"role": "角色",
+		"roleAdmin": "管理员",
+		"roleUser": "普通用户",
+		"status": "状态",
+		"active": "启用",
+		"disabled": "已禁用",
+		"disable": "禁用",
+		"enable": "启用",
+		"delete": "删除",
+		"create": "新建用户",
+		"createUser": "新建用户",
+		"password": "密码",
+		"resetPassword": "重置密码",
+		"newPassword": "新密码",
+		"save": "保存",
+		"deleteTitle": "删除用户“{{name}}”？",
+		"deleteDescription": "该用户将立即失去访问权限。",
+		"lastAdmin": "至少需要保留一个启用的管理员。"
 	}
 }
