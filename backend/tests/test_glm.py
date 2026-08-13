@@ -23,3 +23,19 @@ def test_model_type_and_inheritance():
 
     assert ZhipuChatModel.type == "glm_chat"
     assert issubclass(ZhipuChatModel, DeepSeekChatModel)
+
+
+def test_list_models_returns_two_cards_with_specs():
+    cards = {c.name: c for c in ZhipuCredential.list_models()}
+
+    assert set(cards) == {"glm-5.2", "glm-5-turbo"}
+
+    glm_52 = cards["glm-5.2"]
+    assert glm_52.context_size == 1000000
+    assert glm_52.output_size == 128000
+    assert "application/x-thinking" in glm_52.output_types
+
+    turbo = cards["glm-5-turbo"]
+    assert turbo.context_size == 200000
+    assert turbo.output_size == 128000
+    assert "application/x-thinking" in turbo.output_types

@@ -1,0 +1,19 @@
+name: glm-5.2
+label: GLM 5.2
+status: active
+
+input_types:
+  - text/plain
+
+output_types:
+  - text/plain
+  - application/x-thinking
+
+context_size: 1000000
+output_size: 128000
+
+parameter_overrides:
+  max_tokens: {"maximum": 128000}
+  # Voice 仅适用于 omni 类模型；隐藏该字段避免前端弹窗渲染
+  voice:
+    hidden: true
