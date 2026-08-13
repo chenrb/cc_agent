@@ -1,6 +1,8 @@
 # backend/auth/middleware.py
 import json
+
 import jwt
+
 from backend.auth.security import decode_token
 
 PUBLIC_PATHS = {("POST", "/auth/login"), ("POST", "/auth/refresh")}
@@ -13,9 +15,9 @@ _HEALTH_SENTINEL = "__health_check__"
 # 注意：前端业务路由（/chat、/mcp 等）与 agentscope API 前缀重名，未登录直接
 # 访问会命中 API 而非 SPA，属既有托管限制，不在本放行规则处理范围。
 _SPA_PUBLIC_EXACT = {
-    ("GET", "/"),             # SPA 入口 index.html
-    ("GET", "/login"),        # 登录页
-    ("GET", "/setup"),        # 首次后端地址配置（登录前）
+    ("GET", "/"),  # SPA 入口 index.html
+    ("GET", "/login"),  # 登录页
+    ("GET", "/setup"),  # 首次后端地址配置（登录前）
     ("GET", "/favicon.ico"),
 }
 _SPA_PUBLIC_PREFIXES = ("/assets/",)  # vite 构建产物（js/css/图片）
@@ -47,8 +49,7 @@ def _get_cookie(scope, name):
 
 def _strip_user_headers(scope):
     scope["headers"] = [
-        (k, v) for k, v in scope["headers"]
-        if k.lower() not in (b"x-user-id", b"x-user-role")
+        (k, v) for k, v in scope["headers"] if k.lower() not in (b"x-user-id", b"x-user-role")
     ]
 
 
@@ -64,11 +65,16 @@ async def _send_json(send, status, detail, code=None):
     if code:
         body["code"] = code
     raw = json.dumps(body).encode("utf-8")
-    await send({
-        "type": "http.response.start", "status": status,
-        "headers": [(b"content-type", b"application/json"),
-                    (b"content-length", str(len(raw)).encode())],
-    })
+    await send(
+        {
+            "type": "http.response.start",
+            "status": status,
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", str(len(raw)).encode()),
+            ],
+        }
+    )
     await send({"type": "http.response.body", "body": raw})
 
 

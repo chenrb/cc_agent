@@ -1,8 +1,9 @@
 # backend/tests/test_models.py
 import pytest
 from sqlalchemy import inspect
-from backend.auth.db import engine, Base
+
 from backend.auth import models  # noqa: F401
+from backend.auth.db import Base, engine
 
 
 def _columns(meta, table):
@@ -17,7 +18,15 @@ async def test_users_schema():
 
     def _u(sync_conn):
         return _columns(sync_conn, "users")
+
     async with engine.connect() as conn:
         cols = await conn.run_sync(_u)
-    assert {"id", "username", "password_hash", "role", "is_active",
-            "created_at", "updated_at"} <= cols
+    assert {
+        "id",
+        "username",
+        "password_hash",
+        "role",
+        "is_active",
+        "created_at",
+        "updated_at",
+    } <= cols

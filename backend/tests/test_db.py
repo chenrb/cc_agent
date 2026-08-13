@@ -1,9 +1,10 @@
 # backend/tests/test_db.py
 import pytest
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text
-from backend.auth.db import engine, Base, SessionLocal
+
+from backend.auth.db import Base, SessionLocal, engine
 
 
 def test_db_module_exports():

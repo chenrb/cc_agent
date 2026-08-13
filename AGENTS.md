@@ -26,7 +26,8 @@ uv run python -m backend.main   # 启动开发服务：uvicorn 监听 0.0.0.0:80
 
 - 要求 Python **>=3.13**（`.python-version` 锁定 3.13）。
 - 存储为 SQLite（`backend/cc_agent.db`，通过 `create_tables=True` 自动建表）。**开发期无需运行 Alembic 迁移。**
-- `pyproject.toml` 中没有后端 lint/test 配置；框架自带的 `agentscope/tests/` 属于内嵌库，不属于本应用。
+- lint/format：`uv run ruff check backend` / `uv run ruff format backend`（配置在 `pyproject.toml [tool.ruff]`，排除 `agentscope/`）。
+- 测试：`uv run pytest backend/tests`（鉴权与 admin 路由单测；框架自带的 `agentscope/tests/` 属于内嵌库，不属于本应用）。
 
 ### 前端（pnpm）
 
@@ -45,19 +46,24 @@ pnpm lint:fix
 
 后端的消息总线（`RedisMessageBus`，默认 `localhost:6379`）**硬依赖 Redis**，单进程开发也需要。SQLite 为持久化层；知识库使用内存版 Qdrant 向量库。
 
-将 `backend/.env.example` 复制为 `backend/.env` 即可覆盖默认值。环境变量：
+将 `backend/.env.example` 复制为 `backend/.env` 即可覆盖默认值。所有环境变量由 `backend/settings.py`（pydantic-settings）统一加载——**优先级：环境变量 > `backend/.env` > 字段默认值**。环境变量：
 
 - `REDIS_HOST` / `REDIS_PORT` / `REDIS_DB` / `REDIS_PASSWORD` —— 消息总线（`REDIS_DB` 为 Redis 逻辑库索引，默认 `0`）。
 - `AGENT_DB_NAME` —— SQLite 文件名（相对 `backend/`，默认 `cc_agent.db`）。
 - `AMAP_API_KEY` *（可选）* —— 启用高德地图 MCP 服务。
 - `CLAWHUB_API_TOKEN` *（可选）* —— 技能市场鉴权。
+- `JWT_SECRET` —— **必填**，缺失/为空即拒绝启动（`backend/settings.py` 的 `field_validator` 校验）；`JWT_ACCESS_EXPIRE_MINUTES`（默认 `120`）/ `JWT_REFRESH_EXPIRE_DAYS`（默认 `7`）。
+- `CC_BOOTSTRAP_ADMIN_USERNAME` / `CC_BOOTSTRAP_ADMIN_PASSWORD` —— 首次启动引导的初始管理员（仅在 users 表为空时生效）。
+- `CORS_ALLOWED_ORIGINS` —— 逗号分隔的来源列表，留空则不挂 CORS 中间件。
+- `COOKIE_SECURE` —— 留空=自动（跟随请求 scheme）；`true`/`false`=强制。
 
 默认装配的 MCP 服务为 `browser-use`（stdio，`npx @playwright/mcp@latest`）——宿主机需具备 **Node >=20 + npx**。
 
 ## 架构边界（改动时务必注意）
 
-- `backend/main.py` 相对 `agentscope/examples/agent_service` **刻意做了两处替换**：`RedisStorage → AsyncSQLAlchemyStorage`、`InMemoryMessageBus → RedisMessageBus`。不要把它"简化"回上游默认实现。
-- **渠道（Discord/飞书）被刻意关闭**，因为它们需要支持 channel 的存储后端（RedisStorage）；本项目使用 SQLite。Web UI 通过 HTTP 直连后端。未切换存储前不要重新启用渠道。
+- **后端结构**：`backend/settings.py`（pydantic-settings，配置唯一来源）→ `backend/app.py`（`create_application()` 工厂，完成应用装配）→ `backend/main.py`（瘦入口，仅 `from backend.app import app` + uvicorn `__main__`）。鉴权子系统在 `backend/auth/`：`db.py`（引擎/会话/`get_db` 依赖）、`models.py`、`schemas.py`、`deps.py`（`current_user_id`/`require_admin` 等）、`routes.py`（`auth_router` 前缀 `/auth` + `admin_router` 前缀 `/admin/users`）、`security.py`、`middleware.py`（ASGI JWT 中间件）、`bootstrap.py`、`spa.py`、`config.py`（`resolve_cookie_secure` 派生逻辑）。所有 handler 经 `Depends(get_db)` 取会话。
+- `backend/app.py`（原 `main.py`）相对 `agentscope/examples/agent_service` **刻意做了两处替换**：`RedisStorage → AsyncSQLAlchemyStorage`、`InMemoryMessageBus → RedisMessageBus`。不要把它"简化"回上游默认实现。
+- **渠道（Discord/飞书）已启用**：agentscope 的 `AsyncSQLAlchemyStorage` 本身不实现 channel 持久化（基类默认 `NotImplementedError`）。为保持 agentscope 副本干净，channel 适配放在应用层——`backend/storage.py` 的 `CCAgentStorage(AsyncSQLAlchemyStorage)` 子类覆盖那 6 个 channel 方法，`app.py` 用它替代基类。关键约定：`ChannelRecord` 的时间戳是 ISO 字符串而非 `datetime`，故 channel 读写**绕过通用 `_write_row`/`_from_record`/`_to_record`**——`payload` 列存完整 record dump（读取的唯一真相来源），`user_id`/`channel_type`/`platform_bot_id`（全局 UNIQUE）仅作索引；`ChannelRow` 继承 agentscope 的 `_JsonRecordMixin` 以便 `create_tables=True` 自动建表。`app.py` 经 `channels=[FeishuChannel, DiscordChannel]` 注册类型。真正接通平台还需配置 bot 凭证。
 - 长期记忆按 agent 隔离，以 Markdown 形式存放在会话工作区（`AgenticMemoryMiddleware`，`PER_AGENT` 隔离，跨会话保留）。
 - 修改后端行为时，请查阅 `agentscope/src/agentscope/`（尤其 `app/`、`agent/`、`middleware/`、`mcp/`）——那里是 `create_app` 暴露 API 的权威实现。
 

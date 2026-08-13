@@ -1,8 +1,14 @@
 # backend/tests/test_security.py
 import jwt
 import pytest
-from backend.auth.security import (hash_password, verify_password,
-    create_access_token, create_refresh_token, decode_token)
+
+from backend.auth.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 
 SECRET = "test-secret-0123456789abcdef0123456789ab"
 

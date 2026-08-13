@@ -1,8 +1,9 @@
 # backend/tests/test_bootstrap.py
 import pytest
-from backend.auth.db import engine, Base, SessionLocal
+
 from backend.auth import models  # noqa
 from backend.auth.bootstrap import bootstrap_admin
+from backend.auth.db import Base, SessionLocal, engine
 
 
 async def _reset():
@@ -17,6 +18,7 @@ async def test_creates_admin_when_empty():
     await bootstrap_admin("admin", "pw")
     async with SessionLocal() as s:
         from sqlalchemy import select
+
         u = (await s.execute(select(models.User))).scalar_one()
     assert u.username == "admin" and u.role == "admin"
 
@@ -29,6 +31,7 @@ async def test_skips_when_nonempty():
     await bootstrap_admin("other", "xx")
     async with SessionLocal() as s:
         from sqlalchemy import select
+
         n = len((await s.execute(select(models.User))).scalars().all())
     assert n == 1
 

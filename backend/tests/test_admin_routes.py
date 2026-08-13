@@ -1,13 +1,14 @@
 # backend/tests/test_admin_routes.py
 import pytest
-from httpx import ASGITransport, AsyncClient
 from fastapi import FastAPI
-from backend.auth.db import engine, Base, SessionLocal
+from httpx import ASGITransport, AsyncClient
+
 from backend.auth import models  # noqa
-from backend.auth.middleware import JWTAuthMiddleware
-from backend.auth.routes import auth_router
-from backend.auth.security import hash_password
 from backend.auth import routes as routes_mod
+from backend.auth.db import Base, SessionLocal, engine
+from backend.auth.middleware import JWTAuthMiddleware
+from backend.auth.routes import admin_router, auth_router
+from backend.auth.security import hash_password
 
 SECRET = "test-secret-0123456789abcdef0123456789ab"
 
@@ -31,8 +32,14 @@ async def _add_users(*specs):
     """直接插入额外用户。specs: (username, role, is_active) 三元组。"""
     async with SessionLocal() as s:
         for username, role, is_active in specs:
-            s.add(models.User(username=username, password_hash=hash_password("pw"),
-                              role=role, is_active=is_active))
+            s.add(
+                models.User(
+                    username=username,
+                    password_hash=hash_password("pw"),
+                    role=role,
+                    is_active=is_active,
+                )
+            )
         await s.commit()
 
 
@@ -47,9 +54,12 @@ async def _uid(ac, username):
 
 @pytest.fixture
 async def app_admin():
-    async def _lifespan(_): yield
+    async def _lifespan(_):
+        yield
+
     app = FastAPI()
     app.include_router(auth_router)
+    app.include_router(admin_router)
     app.add_middleware(JWTAuthMiddleware, secret=SECRET)
     await _seed(app)
     return app
@@ -81,8 +91,9 @@ async def test_non_admin_forbidden(app_admin):
 async def test_create_disable_delete(app_admin):
     async with AsyncClient(transport=ASGITransport(app=app_admin), base_url="http://test") as ac:
         await _login(ac)
-        r = await ac.post("/admin/users", json={"username": "carol",
-                                                "password": "pw", "role": "user"})
+        r = await ac.post(
+            "/admin/users", json={"username": "carol", "password": "pw", "role": "user"}
+        )
         assert r.status_code == 201
         cid = r.json()["id"]
         # 禁用

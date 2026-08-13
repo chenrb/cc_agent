@@ -1,6 +1,7 @@
 # backend/auth/security.py
 import secrets as _secrets
 import time
+
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -20,26 +21,30 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def _encode(sub: str, token_type: str, secret: str, expire_minutes: int,
-            role: str | None = None) -> tuple[str, str]:
+def _encode(
+    sub: str, token_type: str, secret: str, expire_minutes: int, role: str | None = None
+) -> tuple[str, str]:
     jti = _secrets.token_urlsafe(16)
     now = int(time.time())
     payload: dict = {
-        "sub": sub, "jti": jti, "type": token_type,
-        "iat": now, "exp": now + int(expire_minutes * 60),
+        "sub": sub,
+        "jti": jti,
+        "type": token_type,
+        "iat": now,
+        "exp": now + int(expire_minutes * 60),
     }
     if role is not None:
         payload["role"] = role
     return jwt.encode(payload, secret, algorithm=_ALGO), jti
 
 
-def create_access_token(sub: str, role: str, secret: str,
-                        expire_minutes: int = 120) -> tuple[str, str]:
+def create_access_token(
+    sub: str, role: str, secret: str, expire_minutes: int = 120
+) -> tuple[str, str]:
     return _encode(sub, "access", secret, expire_minutes, role)
 
 
-def create_refresh_token(sub: str, secret: str,
-                         expire_days: int = 7) -> tuple[str, str]:
+def create_refresh_token(sub: str, secret: str, expire_days: int = 7) -> tuple[str, str]:
     return _encode(sub, "refresh", secret, expire_days * 1440)
 
 
