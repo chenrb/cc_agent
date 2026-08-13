@@ -8,7 +8,6 @@ import {
 	Languages,
 	LibraryBig,
 	LogOut,
-	UserRound,
 	Users,
 } from 'lucide-react';
 import { useOnborda } from 'onborda';
@@ -202,16 +201,6 @@ export function AppSidebar() {
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					)}
-					<SidebarMenuItem>
-						<SidebarMenuButton
-							tooltip={{ children: t('common.settings'), hidden: false }}
-							isActive={location.pathname === '/setup'}
-							onClick={() => navigate('/setup')}
-							className="justify-center"
-						>
-							<UserRound />
-						</SidebarMenuButton>
-					</SidebarMenuItem>
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							tooltip={{ children: t('login.logout'), hidden: false }}

@@ -9,7 +9,7 @@ export default defineConfig({
 	plugins: [react(), tailwindcss(), svgr()],
 	server: {
 		proxy: {
-			'/api': 'http://localhost:3000',
+			'/api': 'http://localhost:8000',
 		},
 	},
 	resolve: {
