@@ -5,8 +5,8 @@
   - 持久化存储：RedisStorage -> AsyncSQLAlchemyStorage（SQLite）
   - 消息总线：InMemoryMessageBus -> RedisMessageBus（始终 Redis，单/多进程通用）
 """
-import asyncio
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
@@ -136,7 +136,6 @@ def _cors_middleware():
                        allow_credentials=True, allow_methods=["*"], allow_headers=["*"])]
 
 
-asyncio.run(init_db_and_bootstrap())
 app = create_app(
     storage=storage,
     message_bus=message_bus,
@@ -190,6 +189,23 @@ app = create_app(
     ],
     title="CC Agent",
 )
+
+# auth 初始化（建表 + 首管引导）挂到 app lifespan 启动阶段，先于 agentscope
+# 服务就绪。不能用模块顶层 asyncio.run()：uvicorn --reload 子进程导入模块时
+# 已处于事件循环中，asyncio.run() 会抛 "cannot be called from a running
+# event loop"。
+_agentscope_lifespan = app.router.lifespan_context
+
+
+@asynccontextmanager
+async def _lifespan(application):
+    await init_db_and_bootstrap()
+    async with _agentscope_lifespan(application):
+        yield
+
+
+app.router.lifespan_context = _lifespan
+
 app.include_router(auth_router)
 mount_spa(app)
 
