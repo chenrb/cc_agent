@@ -31,6 +31,7 @@ from backend.auth.db import Base, engine
 from backend.auth.middleware import JWTAuthMiddleware
 from backend.auth.routes import admin_router, auth_router
 from backend.auth.spa import mount_spa
+from backend.llm.glm import ZhipuCredential
 from backend.settings import Settings, get_settings
 from backend.storage import CCAgentStorage
 
@@ -145,6 +146,7 @@ def create_application() -> FastAPI:
         mcp_hubs=[GitHubMCPHub()],
         skill_hubs=[ClawSkillHub(api_token=settings.clawhub_api_token)],
         channels=[FeishuChannel, DiscordChannel],
+        extra_credentials=[ZhipuCredential],
         custom_subagent_templates=[
             SubAgentTemplate(
                 type="explorer",
