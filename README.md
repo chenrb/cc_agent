@@ -36,7 +36,7 @@ cc_agent/
 - **持久化存储**：`RedisStorage` → `AsyncSQLAlchemyStorage`（SQLite，`create_tables=True`，开发期无需跑 Alembic）
 - **消息总线**：`InMemoryMessageBus` → `RedisMessageBus`（单/多进程统一走 Redis）
 
-> 由于 SQLite 不支持 channels 所需的存储后端，**Discord / 飞书渠道默认未启用**；Web UI 通过 HTTP API 直连后端，不依赖渠道。
+> **渠道（Discord / 飞书）已启用**：agentscope 上游的 `AsyncSQLAlchemyStorage` 默认不实现 channel 持久化（基类那 6 个方法会抛 `NotImplementedError`），本项目在应用层用 `CCAgentStorage`（`backend/storage.py`）子类补齐了它们，并定义独立的 `ChannelRow` 表随 `create_tables=True` 自动建表，故渠道在 SQLite 后端下可正常使用。真正接通平台还需配置 bot 凭证；`RedisMessageBus` 提供 dispatcher/gateway 所需的 pubsub/锁/队列。Web UI 经 HTTP API 直连后端，本身不依赖渠道。
 
 ## 环境要求
 
