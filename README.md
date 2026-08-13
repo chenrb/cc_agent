@@ -54,7 +54,7 @@ cc_agent/
 # 在仓库根目录
 uv sync                              # 按 uv.lock 安装依赖（含本地 agentscope）
 cp backend/.env.example backend/.env # 可选：按需修改配置
-uv run python -m backend.main        # 启动开发服务：uvicorn 0.0.0.0:8000，热重载
+uv run python -m backend.main        # 启动开发服务：uvicorn 0.0.0.0:8000（热重载仅 Linux/macOS；Windows 需手动重启）
 ```
 
 首次启动会在 `backend/` 下自动创建 SQLite 文件（默认 `cc_agent.db`），无需手动建表。

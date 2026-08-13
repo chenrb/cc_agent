@@ -20,8 +20,9 @@ ZCode 智能体在 `cc_agent` 仓库工作时的说明文件。
 
 ```bash
 uv sync                         # 按 uv.lock 安装/锁定依赖（首次运行）
-uv run python -m backend.main   # 启动开发服务：uvicorn 监听 0.0.0.0:8000，开启 reload
-# 等价写法：uv run uvicorn backend.main:app --reload --port 8000
+uv run python -m backend.main   # 启动开发服务：uvicorn 监听 0.0.0.0:8000
+# reload 随平台：Linux/macOS 开启热重载；Windows 关闭（其 SelectorEventLoop
+# 不支持 asyncio 子进程，而 agentscope workspace 依赖 exec_shell），需手动重启
 ```
 
 - 要求 Python **>=3.13**（`.python-version` 锁定 3.13）。
