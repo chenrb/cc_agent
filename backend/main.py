@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 
 import uvicorn
-from dotenv import load_dotenv
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,6 +27,9 @@ from agentscope.permission import PermissionContext, PermissionMode
 from agentscope.rag import QdrantStore
 from agentscope.workspace import WorkspaceBase
 
+# config 必须最先导入：它在导入时 load_dotenv(backend/.env)，并校验 JWT_SECRET
+# （缺失即抛错）。后续所有 os.getenv（含 db.py、routes.py）才能读到 .env。
+from backend.auth.config import JWT_SECRET
 from backend.auth.db import Base, engine
 from backend.auth import models  # noqa: F401  # 注册表
 from backend.auth.bootstrap import bootstrap_admin
@@ -35,10 +37,7 @@ from backend.auth.routes import auth_router
 from backend.auth.middleware import JWTAuthMiddleware
 from backend.auth.spa import mount_spa
 
-JWT_SECRET = os.getenv("JWT_SECRET") or "dev-secret-change-me"
-
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
 
 # --------------------------------------------------------------------------
 # 默认 MCP 服务器：browser-use（需本机 npx / Node>=20）；AMAP 地图按需开启

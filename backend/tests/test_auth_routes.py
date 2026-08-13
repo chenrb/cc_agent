@@ -118,3 +118,28 @@ async def test_logout_revokes_refresh_and_clears_cookies(app_with_admin):
         ac2.cookies.set("cc_refresh", old_refresh, domain="test")
         r2 = await ac2.post("/auth/refresh")
     assert r2.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_cookie_secure_forced(app_with_admin, monkeypatch):
+    # TLS 终止代理场景：scheme=http，但 COOKIE_SECURE=true 应强制带 Secure
+    monkeypatch.setattr(routes_mod, "resolve_cookie_secure", lambda scheme: True)
+    async with AsyncClient(transport=ASGITransport(app=app_with_admin),
+                           base_url="http://test") as ac:
+        r = await ac.post("/auth/login", json={"username": "admin", "password": "pw"})
+    assert r.status_code == 200
+    set_cookie = r.headers.get_list("set-cookie")
+    assert any("Secure" in sc for sc in set_cookie)
+
+
+@pytest.mark.asyncio
+async def test_login_cookie_secure_auto_http(app_with_admin, monkeypatch):
+    # 自动模式 + http 请求 → 不带 Secure
+    monkeypatch.setattr(routes_mod, "resolve_cookie_secure",
+                        lambda scheme: scheme == "https")
+    async with AsyncClient(transport=ASGITransport(app=app_with_admin),
+                           base_url="http://test") as ac:
+        r = await ac.post("/auth/login", json={"username": "admin", "password": "pw"})
+    assert r.status_code == 200
+    set_cookie = r.headers.get_list("set-cookie")
+    assert not any("Secure" in sc for sc in set_cookie)

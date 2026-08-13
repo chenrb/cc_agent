@@ -1,19 +1,23 @@
 # backend/auth/routes.py
-import os
-import secrets
 from datetime import timedelta, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import select, update
+from backend.auth.config import (
+    JWT_ACCESS_EXPIRE_MINUTES,
+    JWT_REFRESH_EXPIRE_DAYS,
+    JWT_SECRET,
+    resolve_cookie_secure,
+)
 from backend.auth.db import SessionLocal
 from backend.auth import models
 from backend.auth.security import (hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token)
 
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
-ACCESS_MIN = int(os.getenv("JWT_ACCESS_EXPIRE_MINUTES", "120"))
-REFRESH_DAYS = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "7"))
+# 保留模块级别名，便于测试 monkeypatch（测试直接 setattr 本模块）。
+ACCESS_MIN = JWT_ACCESS_EXPIRE_MINUTES
+REFRESH_DAYS = JWT_REFRESH_EXPIRE_DAYS
 ACCESS_COOKIE = "cc_access"
 REFRESH_COOKIE = "cc_refresh"
 
@@ -82,7 +86,7 @@ async def login(body: LoginIn, request: Request, response: Response):
         s.add(models.RefreshToken(jti=jti, user_id=user.id,
               expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_DAYS)))
         await s.commit()
-    secure = request.url.scheme == "https"
+    secure = resolve_cookie_secure(request.url.scheme)
     set_auth_cookies(response, access, refresh, secure)
     return LoginOut(user=UserOut(username=user.username, role=user.role),
                     expires_in=ACCESS_MIN * 60)
@@ -116,7 +120,7 @@ async def refresh(request: Request, response: Response):
         s.add(models.RefreshToken(jti=new_jti, user_id=user.id,
               expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_DAYS)))
         await s.commit()
-    secure = request.url.scheme == "https"
+    secure = resolve_cookie_secure(request.url.scheme)
     set_auth_cookies(response, access, new_refresh, secure)
     return {"expires_in": ACCESS_MIN * 60}
 

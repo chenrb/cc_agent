@@ -7,6 +7,25 @@ PUBLIC_PATHS = {("POST", "/auth/login"), ("POST", "/auth/refresh")}
 _HEALTH_PATH = ("GET", "/health")
 _HEALTH_SENTINEL = "__health_check__"
 
+# SPA 同源托管（后端托管 frontend/dist）下，未登录用户也必须能取到登录入口
+# 与静态资源，否则登录页本身会被中间件挡成 401。这里只放行登录流程必需的
+# 入口和纯静态资源——它们不含任何业务数据；真正的鉴权仍在 API 路由层。
+# 注意：前端业务路由（/chat、/mcp 等）与 agentscope API 前缀重名，未登录直接
+# 访问会命中 API 而非 SPA，属既有托管限制，不在本放行规则处理范围。
+_SPA_PUBLIC_EXACT = {
+    ("GET", "/"),             # SPA 入口 index.html
+    ("GET", "/login"),        # 登录页
+    ("GET", "/setup"),        # 首次后端地址配置（登录前）
+    ("GET", "/favicon.ico"),
+}
+_SPA_PUBLIC_PREFIXES = ("/assets/",)  # vite 构建产物（js/css/图片）
+
+
+def _is_public_spa(method: str, path: str) -> bool:
+    if (method, path) in _SPA_PUBLIC_EXACT:
+        return True
+    return method == "GET" and any(path.startswith(p) for p in _SPA_PUBLIC_PREFIXES)
+
 
 def parse_cookies(cookie_header: str) -> dict[str, str]:
     out: dict[str, str] = {}
@@ -66,6 +85,10 @@ class JWTAuthMiddleware:
         method, path = scope["method"], scope["path"]
 
         if (method, path) in PUBLIC_PATHS:
+            _strip_user_headers(scope)
+            return await self.app(scope, receive, send)
+
+        if _is_public_spa(method, path):
             _strip_user_headers(scope)
             return await self.app(scope, receive, send)
 
