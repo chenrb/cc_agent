@@ -12,7 +12,7 @@ ZCode 智能体在 `cc_agent` 仓库工作时的说明文件。
 | `backend/` | Python 3.13、FastAPI、uv | 应用服务。对 `agentscope.app.create_app` 的薄封装。 |
 | `frontend/` | React 19 + TS + Vite 8、pnpm | Web 控制台（聊天、智能体、MCP/技能市场、知识库、定时任务、渠道、凭证）。 |
 
-根目录 `README.md` 目前内容为空——请阅读代码，不要依赖 README。
+根目录 `README.md` 目前内容为空——请阅读代码，不要依赖 README。设计与实施计划在 `docs/superpowers/`（`specs/` 设计稿、`plans/` 实施计划；鉴权与 GLM 厂商接入各有对应文档）——改动这些敏感区域前先读对应文档。
 
 ## 常用命令
 
@@ -28,7 +28,7 @@ uv run python -m backend.main   # 启动开发服务：uvicorn 监听 0.0.0.0:80
 - 要求 Python **>=3.13**（`.python-version` 锁定 3.13）。
 - 存储为 SQLite（`backend/cc_agent.db`，通过 `create_tables=True` 自动建表）。**开发期无需运行 Alembic 迁移。**
 - lint/format：`uv run ruff check backend` / `uv run ruff format backend`（配置在 `pyproject.toml [tool.ruff]`，排除 `agentscope/`）。
-- 测试：`uv run pytest backend/tests`（鉴权与 admin 路由单测；框架自带的 `agentscope/tests/` 属于内嵌库，不属于本应用）。
+- 测试：`uv run pytest backend/tests`（鉴权、admin 路由与模型厂商单测；`conftest.py` 已预置 `JWT_SECRET` / `AGENT_DB_NAME`，无需本地 `.env`。框架自带的 `agentscope/tests/` 属于内嵌库，不属于本应用）。
 
 ### 前端（pnpm）
 
@@ -66,6 +66,7 @@ pnpm lint:fix
 - `backend/app.py`（原 `main.py`）相对 `agentscope/examples/agent_service` **刻意做了两处替换**：`RedisStorage → AsyncSQLAlchemyStorage`、`InMemoryMessageBus → RedisMessageBus`。不要把它"简化"回上游默认实现。
 - **渠道（Discord/飞书）已启用**：agentscope 的 `AsyncSQLAlchemyStorage` 本身不实现 channel 持久化（基类默认 `NotImplementedError`）。为保持 agentscope 副本干净，channel 适配放在应用层——`backend/storage.py` 的 `CCAgentStorage(AsyncSQLAlchemyStorage)` 子类覆盖那 6 个 channel 方法，`app.py` 用它替代基类。关键约定：`ChannelRecord` 的时间戳是 ISO 字符串而非 `datetime`，故 channel 读写**绕过通用 `_write_row`/`_from_record`/`_to_record`**——`payload` 列存完整 record dump（读取的唯一真相来源），`user_id`/`channel_type`/`platform_bot_id`（全局 UNIQUE）仅作索引；`ChannelRow` 继承 agentscope 的 `_JsonRecordMixin` 以便 `create_tables=True` 自动建表。`app.py` 经 `channels=[FeishuChannel, DiscordChannel]` 注册类型。真正接通平台还需配置 bot 凭证。
 - 长期记忆按 agent 隔离，以 Markdown 形式存放在会话工作区（`AgenticMemoryMiddleware`，`PER_AGENT` 隔离，跨会话保留）。
+- **模型厂商（provider）体系是 schema 驱动的**：前端不硬编码任何厂商/模型清单——`GET /credential/schemas` 下发厂商下拉与凭证表单，`GET /model/?provider=<type>` 下发模型卡。新增厂商是纯后端工作，放在 `backend/llm/<vendor>/`：定义 `CredentialBase` 子类（`type` 判别符 + `base_url` 默认值）与 `ChatModelBase` 子类，模型卡放同目录 `_models/*.yaml`（`ChatModelBase.list_models()` 经 `inspect.getfile` 自动发现），再在 `app.py` 的 `create_app(extra_credentials=[...])` 注册。范例见 GLM：`backend/llm/glm/` 的 `ZhipuChatModel` 继承 `DeepSeekChatModel`（两者 OpenAI 兼容端点与 `reasoning_content` 思考链一致），做到前端零改动、agentscope 零改动。
 - 修改后端行为时，请查阅 `agentscope/src/agentscope/`（尤其 `app/`、`agent/`、`middleware/`、`mcp/`）——那里是 `create_app` 暴露 API 的权威实现。
 
 ## 前端约定
@@ -76,3 +77,4 @@ pnpm lint:fix
 - **用户可见文案必须国际化**：i18next + react-i18next，文案在 `src/i18n/locales/en.json` 与 `zh.json`（`fallbackLng: 'en'`）。新增字符串需**同时**写入两个 locale 文件。
 - 样式：TailwindCSS 4 + shadcn/ui。用 `@/lib/utils` 的 `cn()` 合并类名。
 - 聊天工具输出由 `src/components/chat/tool-renderers/` 下各工具对应的组件渲染；接入新工具 UI 时新增一个。
+- 凭证表单同样 schema 驱动：`CredentialSchema`（来自 `/credential/schemas`）经 `SchemaForm` 渲染；新建/编辑对话框共用 `src/components/dialog/credentialPayload.ts` 把表单值组装成提交数据（writeOnly 字段留空=不变更，可空字段置 `null`，非必填字段留空则删除）。
