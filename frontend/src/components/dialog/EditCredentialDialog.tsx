@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 
 import { credentialApi } from '@/api';
 import type { CredentialView, CredentialSchema } from '@/api';
+import { buildCredentialUpdateData } from '@/components/dialog/credentialPayload';
 import { SchemaForm, type SchemaFormValue } from '@/components/form/SchemaForm';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,12 +65,7 @@ export function EditCredentialDialog({ open, onOpenChange, credential, onUpdated
 		if (!schema) return;
 		setSubmitting(true);
 		try {
-			const data: Record<string, unknown> = { ...credential.data };
-			for (const [key, prop] of Object.entries(schema.properties)) {
-				if (key === 'id' || key === 'type' || prop.const !== undefined) continue;
-				const val = values[key];
-				if (val !== undefined && val !== '') data[key] = val;
-			}
+			const data = buildCredentialUpdateData(credential.data, schema, values);
 			await update(credential.id, { data });
 			onOpenChange(false);
 			onUpdated?.();
