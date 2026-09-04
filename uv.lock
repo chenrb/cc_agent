@@ -9,6 +9,24 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "a2a-sdk"
+version = "1.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core" },
+    { name = "googleapis-common-protos" },
+    { name = "httpx" },
+    { name = "json-rpc" },
+    { name = "packaging" },
+    { name = "protobuf" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/cc/59b35c518d8289bd59d20d9d216ca29ccb41c4697eb85971efe41d1adaf3/a2a_sdk-1.1.2.tar.gz", hash = "sha256:f928d8bf9a0dc0a473ee8258bd5226c1b8520a85c70e7f233c3b9b0e30a1bd10", size = 379627, upload-time = "2026-07-22T13:40:51.409Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/33/d414a03d5ef5a7d6d09a20dc9f8094e7fb9edb488662ff99c535a2a62cf1/a2a_sdk-1.1.2-py3-none-any.whl", hash = "sha256:eb9a698f526dc45a9ea967d7804e7aa363ff273d2c44fbed699bc68c9399f9c9", size = 245981, upload-time = "2026-07-22T13:40:49.484Z" },
+]
+
+[[package]]
 name = "ag-ui-protocol"
 version = "0.1.19"
 source = { registry = "https://pypi.org/simple" }
@@ -32,7 +50,7 @@ dependencies = [
     { name = "filetype" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "json-repair" },
+    { name = "json-repair", extra = ["schema"] },
     { name = "json5" },
     { name = "jsonschema" },
     { name = "mcp" },
@@ -42,6 +60,7 @@ dependencies = [
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-sdk" },
     { name = "opentelemetry-semantic-conventions" },
+    { name = "pypdf" },
     { name = "python-datauri" },
     { name = "python-frontmatter" },
     { name = "python-socketio" },
@@ -54,16 +73,19 @@ dependencies = [
 
 [package.optional-dependencies]
 channel = [
+    { name = "dingtalk-stream" },
     { name = "discord-py" },
     { name = "lark-oapi" },
 ]
 full = [
+    { name = "a2a-sdk" },
     { name = "ag-ui-protocol" },
     { name = "aioboto3" },
     { name = "aiodocker" },
     { name = "alembic" },
     { name = "apscheduler" },
     { name = "daytona" },
+    { name = "dingtalk-stream" },
     { name = "discord-py" },
     { name = "e2b" },
     { name = "elasticsearch", extra = ["async"] },
@@ -125,7 +147,9 @@ workspace = [
 
 [package.metadata]
 requires-dist = [
+    { name = "a2a-sdk", marker = "extra == 'a2a'", specifier = ">=1.1.1" },
     { name = "ag-ui-protocol", marker = "extra == 'service'", specifier = ">=0.1.10" },
+    { name = "agentscope", extras = ["a2a"], marker = "extra == 'full'" },
     { name = "agentscope", extras = ["channel"], marker = "extra == 'full'" },
     { name = "agentscope", extras = ["full"], marker = "extra == 'dev'" },
     { name = "agentscope", extras = ["memory"], marker = "extra == 'full'" },
@@ -174,17 +198,18 @@ requires-dist = [
     { name = "boto3", marker = "extra == 'dev'" },
     { name = "dashscope" },
     { name = "daytona", marker = "extra == 'workspace-daytona'" },
+    { name = "dingtalk-stream", marker = "extra == 'channel'", specifier = ">=0.24.3" },
     { name = "discord-py", marker = "extra == 'channel'", specifier = ">=2.3" },
     { name = "docstring-parser" },
     { name = "e2b", marker = "extra == 'workspace-e2b'" },
     { name = "elasticsearch", extras = ["async"], marker = "extra == 'vdb-elasticsearch'", specifier = ">=8.12" },
-    { name = "fakeredis", marker = "extra == 'dev'" },
+    { name = "fakeredis", extras = ["lua"], marker = "extra == 'dev'" },
     { name = "fastapi", marker = "extra == 'service'" },
     { name = "filetype" },
     { name = "google-genai", marker = "extra == 'model-gemini'" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "json-repair" },
+    { name = "json-repair", extras = ["schema"], specifier = ">=0.63.4" },
     { name = "json5" },
     { name = "jsonschema" },
     { name = "kubernetes-asyncio", marker = "extra == 'workspace-k8s'" },
@@ -208,6 +233,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'" },
     { name = "pymilvus", marker = "extra == 'vdb-milvus'", specifier = ">=2.4.0" },
     { name = "pymongo", marker = "extra == 'vdb-mongodb'", specifier = ">=4.7" },
+    { name = "pypdf" },
     { name = "pypdf", marker = "extra == 'rag'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-forked", marker = "extra == 'dev'" },
@@ -231,7 +257,7 @@ requires-dist = [
     { name = "xai-sdk", marker = "extra == 'model-xai'" },
     { name = "xlrd", marker = "extra == 'rag'", specifier = ">=2.0" },
 ]
-provides-extras = ["model-gemini", "model-ollama", "model-xai", "models", "service", "storage-redis", "storage-sql", "storage-s3", "channel", "workspace-docker", "workspace-e2b", "workspace-daytona", "workspace-k8s", "workspace-opensandbox", "workspace", "tools", "vdb-qdrant", "vdb-milvus", "vdb-mongodb", "vdb-elasticsearch", "rag", "memory-mem0", "memory-reme", "memory", "gemini", "ollama", "xai", "storage", "sql", "s3", "k8s", "milvuslite", "mongodb", "elasticsearch", "mem0", "reme", "full", "dev"]
+provides-extras = ["model-gemini", "model-ollama", "model-xai", "models", "service", "storage-redis", "storage-sql", "storage-s3", "channel", "workspace-docker", "workspace-e2b", "workspace-daytona", "workspace-k8s", "workspace-opensandbox", "workspace", "tools", "a2a", "vdb-qdrant", "vdb-milvus", "vdb-mongodb", "vdb-elasticsearch", "rag", "memory-mem0", "memory-reme", "memory", "gemini", "ollama", "xai", "storage", "sql", "s3", "k8s", "milvuslite", "mongodb", "elasticsearch", "mem0", "reme", "full", "dev"]
 
 [[package]]
 name = "aioboto3"
@@ -1178,6 +1204,19 @@ wheels = [
 ]
 
 [[package]]
+name = "dingtalk-stream"
+version = "0.24.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "requests" },
+    { name = "websockets" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4c/44/102dede3f371277598df6aa9725b82e3add068c729333c7a5dbc12764579/dingtalk_stream-0.24.3-py3-none-any.whl", hash = "sha256:2160403656985962878bf60cdf5adf41619f21067348e06f07a7c7eebf5943ad", size = 27813, upload-time = "2025-10-24T09:36:57.497Z" },
+]
+
+[[package]]
 name = "discord-py"
 version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1493,6 +1532,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/89/76/c615883b7b521ead2944bb3480398cbb07e12b7b4e4d073d3752eb721558/frozenlist-1.8.0-cp314-cp314t-win_amd64.whl", hash = "sha256:06be8f67f39c8b1dc671f5d83aaefd3358ae5cdcf8314552c57e7ed3e6475bdd", size = 49451, upload-time = "2025-10-06T05:37:53.425Z" },
     { url = "https://files.pythonhosted.org/packages/e0/a3/5982da14e113d07b325230f95060e2169f5311b1017ea8af2a29b374c289/frozenlist-1.8.0-cp314-cp314t-win_arm64.whl", hash = "sha256:102e6314ca4da683dca92e3b1355490fed5f313b768500084fbe6371fddfdb79", size = 42507, upload-time = "2025-10-06T05:37:54.513Z" },
     { url = "https://files.pythonhosted.org/packages/9a/9a/e35b4a917281c0b8419d4207f4334c8e8c5dbf4f3f5f9ada73958d937dcc/frozenlist-1.8.0-py3-none-any.whl", hash = "sha256:0c18a16eab41e82c295618a77502e17b195883241c563b00f0aa5106fc4eaa0d", size = 13409, upload-time = "2025-10-06T05:38:16.721Z" },
+]
+
+[[package]]
+name = "google-api-core"
+version = "2.36.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-auth" },
+    { name = "googleapis-common-protos" },
+    { name = "opentelemetry-api" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bf/d8/88c2f0e6b0dd46a7796cca64fad99c7adba2417916f5393e82b9b7d2548e/google_api_core-2.36.0.tar.gz", hash = "sha256:32779307b52e64c9a9592a3621de6281676ecaeea299fe8524e4637ab7ac2531", size = 196879, upload-time = "2026-09-03T22:30:51.216Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/44/56/30c91c61b8f70d4c09285a005b94798729aeaf4ec8b90c1c360da8207728/google_api_core-2.36.0-py3-none-any.whl", hash = "sha256:e4d0b179260727ea5c42222426d9199285214dbef7bf48f8b16600c7f9a78944", size = 184118, upload-time = "2026-09-03T22:30:06.662Z" },
 ]
 
 [[package]]
@@ -1926,11 +1982,26 @@ wheels = [
 
 [[package]]
 name = "json-repair"
-version = "0.63.0"
+version = "0.63.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7d/88/600f1b41f3a0e383a2e95014c25fa9fdc5fb0d6d77323e7b8e9d517271e3/json_repair-0.63.0.tar.gz", hash = "sha256:27ce6724ede2eff84c39c7d142dbfcd07c3635ebb79e4fa8e81d1b57367a1cbe", size = 52085, upload-time = "2026-08-11T09:28:29.962Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/72/4ec122befe7c2091ba7370d985cf0a3d4dbeccc2f832898ddb7921b4ab94/json_repair-0.63.4.tar.gz", hash = "sha256:77aa642193d62b02b889e8ce0df33898d3ea87282f0b9d8653f8ce8772c642b4", size = 52906, upload-time = "2026-08-25T07:39:02.725Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/84/1f5ee13057a3f6eec537664e95dfd71b94ac9e1bbf0a3ba8fc7f0c13b6f1/json_repair-0.63.0-py3-none-any.whl", hash = "sha256:e086519c8aba422a08f3b1c0882dcf5a0d2a47e65b450e3f23b224cdc12c545d", size = 50648, upload-time = "2026-08-11T09:28:28.717Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/ea/1a7b47196b0d03f59a80f5218b2a34160587c84ca8b0bcb56cb4ee93834e/json_repair-0.63.4-py3-none-any.whl", hash = "sha256:0f374f3eee21454aef0a5d72c06b8689b660a1788f80ab392639e3f7d5c5d458", size = 51295, upload-time = "2026-08-25T07:39:01.259Z" },
+]
+
+[package.optional-dependencies]
+schema = [
+    { name = "jsonschema" },
+    { name = "pydantic" },
+]
+
+[[package]]
+name = "json-rpc"
+version = "1.15.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/9e/59f4a5b7855ced7346ebf40a2e9a8942863f644378d956f68bcef2c88b90/json-rpc-1.15.0.tar.gz", hash = "sha256:e6441d56c1dcd54241c937d0a2dcd193bdf0bdc539b5316524713f554b7f85b9", size = 28854, upload-time = "2023-06-11T09:45:49.078Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/9e/820c4b086ad01ba7d77369fb8b11470a01fac9b4977f02e18659cf378b6b/json_rpc-1.15.0-py2.py3-none-any.whl", hash = "sha256:4a4668bbbe7116feb4abbd0f54e64a4adcf4b8f648f19ffa0848ad0f6606a9bf", size = 39450, upload-time = "2023-06-11T09:45:47.136Z" },
 ]
 
 [[package]]
@@ -2955,6 +3026,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/88/fb/46dad6c0ae49ed230ab1b16c890c2b6314e2403e6c412976f4a72d64a527/propcache-0.5.2-cp314-cp314t-win_amd64.whl", hash = "sha256:d447bb0b3054be5818458fbb171208b1d9ff11eba14e18ca18b90cbb45767370", size = 47764, upload-time = "2026-05-08T21:02:07.353Z" },
     { url = "https://files.pythonhosted.org/packages/e7/c4/a47d0a63aa309d10d59ede6e9d4cff03a344a79d1f0f4cd0cd74997b53e0/propcache-0.5.2-cp314-cp314t-win_arm64.whl", hash = "sha256:fe67a3d11cd9b4efabfa45c3d00ffba2b26811442a73a581a94b67c2b5faccf6", size = 41140, upload-time = "2026-05-08T21:02:09.065Z" },
     { url = "https://files.pythonhosted.org/packages/3a/ed/1cdcab6ba3d6ab7feca11fc14f0eeea80755bb53ef4e892079f31b10a25f/propcache-0.5.2-py3-none-any.whl", hash = "sha256:be1ddfcbb376e3de5d2e2db1d58d6d67463e6b4f9f040c000de8e300295465fe", size = 14036, upload-time = "2026-05-08T21:02:10.673Z" },
+]
+
+[[package]]
+name = "proto-plus"
+version = "1.28.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/40/a6/4fbadcc2044034449b3f8f0ce82dcf3005d53f37c136642103fd4836a31c/proto_plus-1.28.4.tar.gz", hash = "sha256:5ff7ecad828e032a491fcb86947801768e32237f99dd049b649965b892ae9a63", size = 58679, upload-time = "2026-08-25T19:19:15.102Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/41/5d/0f04b85dafdc3250ced7f2592efc17dce7f40712e941e9632202481e600d/proto_plus-1.28.4-py3-none-any.whl", hash = "sha256:4b01341272f8a348db3f003b6143109f83ab43091019d5181b3fcdf500ab32aa", size = 50797, upload-time = "2026-08-25T19:18:12.338Z" },
 ]
 
 [[package]]
