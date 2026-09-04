@@ -383,7 +383,17 @@
 		},
 		"addCredential": "Add Credential",
 		"clear": "Clear selection",
-		"noFallback": "No fallback"
+		"noFallback": "No fallback",
+		"custom": {
+			"menuItem": "Custom model…",
+			"title": "Custom model",
+			"description": "Type any model name the credential's endpoint supports — relay, local, or newly released models outside the catalog all work.",
+			"credential": "Credential",
+			"credentialPlaceholder": "Select a credential",
+			"model": "Model name",
+			"modelPlaceholder": "e.g. gpt-5.2",
+			"confirm": "Use this model"
+		}
 	},
 	"embedding-select": {
 		"placeholder": "Select an embedding model",

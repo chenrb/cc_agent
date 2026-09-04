@@ -383,7 +383,17 @@
 		},
 		"addCredential": "添加凭证",
 		"clear": "清除选择",
-		"noFallback": "无兜底模型"
+		"noFallback": "无兜底模型",
+		"custom": {
+			"menuItem": "自定义模型…",
+			"title": "自定义模型",
+			"description": "直接输入该凭证端点支持的任意模型名——中转、本地或目录之外的新模型均可使用。",
+			"credential": "凭证",
+			"credentialPlaceholder": "选择凭证",
+			"model": "模型名",
+			"modelPlaceholder": "例如 gpt-5.2",
+			"confirm": "使用该模型"
+		}
 	},
 	"embedding-select": {
 		"placeholder": "选择 Embedding 模型",
