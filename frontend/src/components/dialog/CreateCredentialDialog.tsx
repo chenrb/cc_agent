@@ -42,6 +42,9 @@ export function CreateCredentialDialog({ open, onOpenChange, onCreated, defaultT
 
 	useEffect(() => {
 		if (!open) return;
+		// 对话框常驻挂载、仅切换 open，关闭后 state 仍存活——重开时必须
+		// 清空上次输入，否则旧值（含密钥）会原样回显。
+		setValues({});
 		setLoadingSchemas(true);
 		credentialApi
 			.schemas()
