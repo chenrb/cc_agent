@@ -66,7 +66,15 @@ class ChannelRow(_JsonRecordMixin):
         nullable=False,
     )
 
-    __table_args__ = (UniqueConstraint("platform_bot_id", name="uq_channels_platform_bot_id"),)
+    # agentscope>=2.0.7 的 _tables 也定义了同名 channels 表（原生 channel
+    # 持久化）。本模块先 import 上游 _tables（见上方 import），再以
+    # extend_existing 重定义——让本表结构（payload 为读取真相源，兼容既有
+    # SQLite 数据）胜出；上游原生 channel 方法已被下方 CCAgentStorage
+    # 全量覆盖，不会执行。
+    __table_args__ = (
+        UniqueConstraint("platform_bot_id", name="uq_channels_platform_bot_id"),
+        {"extend_existing": True},
+    )
 
     _indexed_fields = ("user_id", "channel_type")
 
